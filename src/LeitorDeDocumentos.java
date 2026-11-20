@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 
 public class LeitorDeDocumentos {
 
-    // Lê o arquivo inteiro e devolve o conteúdo como uma única String
+    // 1. Lê o arquivo inteiro e devolve o conteúdo como uma única String
     public String lerConteudo(String caminhoArquivo) {
         try {
             Path caminho = Paths.get(caminhoArquivo); // Converte o 'caminho' (texto) para um 'Path'
@@ -19,7 +19,7 @@ public class LeitorDeDocumentos {
         }
     }
 
-    // Normaliza o texto e separa em palavras (uma palavra por posição do vetor)
+    // 2. Normaliza o texto e separa em palavras (uma palavra por posição do vetor)
     public String[] criadorDoVetor(String texto) {
         texto = texto.toLowerCase();// Coloca tudo em minúsculo
         texto = texto.replaceAll("[^\\p{L}\\p{N}\\s]", " "); // Troca tudo que não é letra, número ou espaço por um espaço
