@@ -26,7 +26,7 @@ public class Espaco<V> {
     public void adicionar(String chave, V valor) {
         Par<V> existente = buscar(chave);
         if (existente != null) {
-            existente.valor = valor;          // palavra já existe: atualiza
+            existente.valor = valor;          
         } else {
             dados.insertTail(new Par<>(chave, valor));
         }
