@@ -76,3 +76,95 @@ public class Main {
             Documento b = procurar(docs, args[4]);
             if (a == null || b == null) {
                 System.err.println("Arquivo não encontrado entre os documentos lidos.");
+                return;
+            }
+            double sim = comparador.calcularSimilaridade(a, b);
+            saida.append("Comparando: ").append(a.getNome()).append(" <-> ").append(b.getNome()).append("\n");
+            saida.append(String.format(java.util.Locale.US, "Similaridade calculada: %.2f%n", sim));
+            saida.append("Métrica utilizada: Cosseno\n");
+            emitir(saida.toString());
+            return;
+        }
+
+        // ---------- 4. Compara todos os pares e insere na AVL ----------
+        ArvoreAVL arvore = new ArvoreAVL();
+        int totalPares = 0;
+        for (int i = 0; i < docs.size(); i++) {
+            for (int j = i + 1; j < docs.size(); j++) {
+                double sim = comparador.calcularSimilaridade(docs.get(i), docs.get(j));
+                arvore.inserir(new Resultado(docs.get(i).getNome(), docs.get(j).getNome(), sim));
+                totalPares++;
+            }
+        }
+
+        // Travessia decrescente: do mais parecido para o menos parecido
+        List<Resultado> decrescente = new ArrayList<>();
+        arvore.emOrdemDecrescente(decrescente);
+
+        saida.append("Total de documentos processados: ").append(docs.size()).append("\n");
+        saida.append("Total de pares comparados: ").append(totalPares).append("\n");
+        saida.append("Função hash utilizada: ").append(nomeHash).append("\n");
+        saida.append("Métrica de similaridade: Cosseno\n\n");
+
+        // ---------- 5. Modos lista e topK ----------
+        int limite = Integer.MAX_VALUE;      // lista: sem limite de quantidade
+        if (modo.equals("topk")) {
+            if (n < 4) {
+                System.err.println("Modo topK precisa do valor de K: topK 5");
+                return;
+            }
+            try {
+                limite = Integer.parseInt(args[3]);
+            } catch (NumberFormatException e) {
+                System.err.println("K inválido: " + args[3]);
+                return;
+            }
+        } else if (!modo.equals("lista")) {
+            System.err.println("Modo inválido: " + args[2] + " (use lista, topK ou busca)");
+            return;
+        }
+
+        saida.append(String.format(java.util.Locale.US, "Pares com similaridade >= %.2f:%n", limiar));
+        int mostrados = 0;
+        for (Resultado r : decrescente) {
+            if (r.getSimilaridade() < limiar || mostrados >= limite) break;
+            saida.append(r).append("\n");
+            mostrados++;
+        }
+        if (mostrados == 0) saida.append("(nenhum par encontrado)\n");
+
+        // Os pares de menor similaridade: pega do fim da lista decrescente (até 3)
+        saida.append("\nPares com menor similaridade:\n");
+        int inicio = Math.max(0, decrescente.size() - 3);
+        for (int i = decrescente.size() - 1; i >= inicio; i--) {
+            saida.append(decrescente.get(i)).append("\n");
+        }
+
+        emitir(saida.toString());
+
+        // Contagem de rotações (útil para o relatório; vai para o stderr para não poluir a saída)
+        RegistroRotacoes reg = arvore.getRegistro();
+        System.err.println("[AVL] simples esq: " + reg.simplesEsq + " | simples dir: " + reg.simplesDir
+                + " | dupla esq-dir: " + reg.duplaEsqDir + " | dupla dir-esq: " + reg.duplaDirEsq
+                + " | altura: " + arvore.altura());
+    }
+
+    // Procura um documento pelo nome do arquivo
+    private static Documento procurar(List<Documento> docs, String nome) {
+        for (Documento d : docs) {
+            if (d.getNome().equals(nome)) return d;
+        }
+        return null;
+    }
+
+    // Mostra no terminal E grava em resultado.txt (sem interação manual)
+    private static void emitir(String texto) {
+        System.out.print(texto);
+        try {
+            Files.writeString(Paths.get("resultado.txt"), texto, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            System.err.println("Erro ao gravar resultado.txt");
+        }
+    }
+}== null) {
+                System.err.println("Arquivo não encontrado entre os documentos lidos.");
