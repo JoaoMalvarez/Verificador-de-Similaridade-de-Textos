@@ -3,9 +3,6 @@ public class Documento {
     private String nome;                           // nome do arquivo (como: doc1.txt)
     private Tabela_Hash<Integer> frequencias;      // palavra -> quantas vezes aparece
 
-    // Tabela de stop words: "static" = existe uma só, compartilhada por todos os Documentos
-    private static Tabela_Hash<Integer> stopWords = criarStopWords();
-
     private static final String[] LISTA_STOP_WORDS = {
         "a", "o", "e", "é", "de", "da", "do", "das", "dos", "em", "no", "na",
         "nos", "nas", "um", "uma", "uns", "umas", "para", "por", "com", "sem",
@@ -13,6 +10,9 @@ public class Documento {
         "foi", "são", "ser", "ter", "seu", "sua", "seus", "suas", "isso", "este",
         "esta", "esse", "essa", "já", "não", "só", "também", "entre"
     };
+
+    // Tabela de stop words: "static" = existe uma só, compartilhada por todos os Documentos
+    private static Tabela_Hash<Integer> stopWords = criarStopWords();
 
     // 1. Carrega as stop words numa Tabela_Hash (valor 1 só marca "esta palavra existe")
     private static Tabela_Hash<Integer> criarStopWords() {
