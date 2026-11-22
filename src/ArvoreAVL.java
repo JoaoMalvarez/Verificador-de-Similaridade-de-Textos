@@ -1,156 +1,116 @@
-public class Arvore {
+import java.util.List;
+
+public class ArvoreAVL {
     private No raiz;
+    private RegistroRotacoes reg;   // contagem acumulada
 
-    public Arvore() {
-        this.raiz = null;
+    public ArvoreAVL() {
+        raiz = null;
+        reg = new RegistroRotacoes();
     }
 
-    public int altura() {
-        return altura(raiz);
+    // ---------- utilitários de altura e balanceamento ----------
+    private int altura(No n) {
+        return (n == null) ? 0 : n.altura;
     }
 
-    private int altura(No p) {
-        if (p == null) return -1;
-        int hesq = altura(p.esq);
-        int hdir = altura(p.dir);
-        return (hesq > hdir) ? hesq + 1 : hdir + 1;
+    private void atualizarAltura(No n) {
+        n.altura = 1 + Math.max(altura(n.esq), altura(n.dir));
     }
 
-    public No insere(No p, int valor) {
-        if (p == null) {
-            return new No(valor);
-        }
-        
-        if (valor < p.dado) {
-            p.esq = insere(p.esq, valor);
-            p.bal = altura(p.dir) - altura(p.esq);
-            if (p.bal == -2) {
-                p = caso1(p);
-            }
-        } else if (valor > p.dado) {
-            p.dir = insere(p.dir, valor);
-            p.bal = altura(p.dir) - altura(p.esq);
-            if (p.bal == 2) {
-                p = caso2(p);
-            }
-        }
-        
-        p.bal = altura(p.dir) - altura(p.esq);
-        return p;
+    // fator = altura direita - altura esquerda (mesma convenção do seu código)
+    private int fator(No n) {
+        return (n == null) ? 0 : altura(n.dir) - altura(n.esq);
     }
 
-    public No caso1(No p) {
+    // ---------- rotações ----------
+    private No rotacaoDireita(No p) {      // caso esquerda-esquerda
         No u = p.esq;
-        
-        // caso 1.2 (Esquerda-Direita / Rotação Dupla)
-        if (p.esq != null && p.esq.bal == 1) {
-            No v = u.dir;
-            u.dir = v.esq;
-            p.esq = v.dir;
-            v.esq = u;
-            v.dir = p;
-            
-            u.bal = altura(u.dir) - altura(u.esq);
-            p.bal = altura(p.dir) - altura(p.esq);
-            v.bal = altura(v.dir) - altura(v.esq);
-            p = v;
-        } 
-        // caso 1.1 (Esquerda-Esquerda / Rotação Simples)
-        else {
-            p.esq = u.dir;
-            u.dir = p;
-            
-            p.bal = altura(p.dir) - altura(p.esq);
-            u.bal = altura(u.dir) - altura(u.esq);
-            p = u;
-        }
-        
-        return p;
+        p.esq = u.dir;
+        u.dir = p;
+        atualizarAltura(p);
+        atualizarAltura(u);
+        return u;
     }
 
-    public No caso2(No p) {
+    private No rotacaoEsquerda(No p) {     // caso direita-direita
         No z = p.dir;
-        
-        // caso 2.2 (Direita-Esquerda / Rotação Dupla)
-        if (p.dir != null && p.dir.bal == -1) {
-            No y = z.esq;
-            z.esq = y.dir;
-            p.dir = y.esq;
-            y.esq = p;
-            y.dir = z;
-            
-            p.bal = altura(p.dir) - altura(p.esq);
-            z.bal = altura(z.dir) - altura(z.esq);
-            y.bal = altura(y.dir) - altura(y.esq);
-            p = y;
-        } 
-        // caso 2.1 (Direita-Direita / Rotação Simples)
-        else {
-            p.dir = z.esq;
-            z.esq = p;
-            
-            p.bal = altura(p.dir) - altura(p.esq);
-            z.bal = altura(z.dir) - altura(z.esq);
-            p = z;
-        }
-        
-        return p;
+        p.dir = z.esq;
+        z.esq = p;
+        atualizarAltura(p);
+        atualizarAltura(z);
+        return z;
     }
 
-    // ==========================================
-    //  Maior número menor ou igual a n
-    // ==========================================
-    public No maiorN(int n, No r, No melhor) {
-        if (r == null) return melhor;
-        if (r.dado == n) {
-            return r; // Encontrou o valor exato, que é o máximo possível <= n
-        } else if (r.dado < n) {
-            // r.dado é menor que n (candidato válido). 
-            // Salvamos r como melhor e procuramos na direita por um valor ainda maior.
-            return maiorN(n, r.dir, r);
+    // ---------- inserção ----------
+    // Retorna o registro com as contagens acumuladas
+    public RegistroRotacoes inserir(Resultado r) {
+        raiz = inserir(raiz, r);
+        return reg;
+    }
+
+    private No inserir(No p, Resultado r) {
+        if (p == null) return new No(r.getSimilaridade(), r);
+
+        double s = r.getSimilaridade();
+        if (s < p.chave) {
+            p.esq = inserir(p.esq, r);
+        } else if (s > p.chave) {
+            p.dir = inserir(p.dir, r);
         } else {
-            // r.dado é maior que n, não serve. Procuramos na esquerda.
-            return maiorN(n, r.esq, melhor);
+            p.pares.add(r);          // mesma similaridade: só entra na lista
+            return p;
         }
-    }
 
-    public No maiorN(int n) {
-        return maiorN(n, raiz, null);
-    }
+        atualizarAltura(p);
+        int f = fator(p);
 
-    // ==========================================
-    //  Retornar o pai de um nó y
-    // ==========================================
-    public No pai(No y) {
-        if (raiz == null || y == null || raiz == y) return null;
-        
-        No q = raiz;
-        No aux = null;
-        
-        while (q != null && q != y) {
-            aux = q;
-            if (y.dado < q.dado) {
-                q = q.esq;
-            } else {
-                q = q.dir;
+        if (f == -2) {                       // pesado à esquerda
+            if (fator(p.esq) <= 0) {         // esquerda-esquerda
+                reg.simplesDir++;
+                return rotacaoDireita(p);
+            } else {                         // esquerda-direita
+                reg.duplaEsqDir++;
+                p.esq = rotacaoEsquerda(p.esq);
+                return rotacaoDireita(p);
             }
         }
-        
-        // Se encontrou o nó, retorna o pai (aux); senão, o nó não está na árvore
-        if (q == y) return aux;
-        else return null;
+        if (f == 2) {                        // pesado à direita
+            if (fator(p.dir) >= 0) {         // direita-direita
+                reg.simplesEsq++;
+                return rotacaoEsquerda(p);
+            } else {                         // direita-esquerda
+                reg.duplaDirEsq++;
+                p.dir = rotacaoDireita(p.dir);
+                return rotacaoEsquerda(p);
+            }
+        }
+        return p;
     }
 
-    // ==========================================
-    //  Soma de todas as folhas
-    // ==========================================
-    public int somaFolhas(No p) {
-        if (p == null) return 0;
-        if (p.esq == null && p.dir == null) return p.dado;
-        return somaFolhas(p.esq) + somaFolhas(p.dir);
+    // ---------- travessias ----------
+    // Crescente: da menor para a maior similaridade
+    public void emOrdem(List<Resultado> saida) {
+        emOrdem(raiz, saida);
+    }
+    private void emOrdem(No n, List<Resultado> saida) {
+        if (n == null) return;
+        emOrdem(n.esq, saida);
+        saida.addAll(n.pares);
+        emOrdem(n.dir, saida);
     }
 
-    public int somaFolhas() {
-        return somaFolhas(raiz);
+    // Decrescente: da maior para a menor (útil para topK)
+    public void emOrdemDecrescente(List<Resultado> saida) {
+        emOrdemDecrescente(raiz, saida);
     }
+    private void emOrdemDecrescente(No n, List<Resultado> saida) {
+        if (n == null) return;
+        emOrdemDecrescente(n.dir, saida);
+        saida.addAll(n.pares);
+        emOrdemDecrescente(n.esq, saida);
+    }
+
+    public int altura() { return altura(raiz); }
+    public RegistroRotacoes getRegistro() { return reg; }
 }
